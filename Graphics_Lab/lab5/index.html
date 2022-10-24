@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <style type="text/css">
+    </style>
+</head>
+
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/102/three.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.5/dat.gui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/2.1.2/TweenMax.min.js"></script>
+        <script src="OrbitControls.js"></script>
+
+    <script type="text/javascript">
+        /**
+         * This class encapsulates a THREE.js Sphere
+         */
+        class Ball {
+
+            /**
+             * The constructor accepts four arguments for constructing a THREE.SphereGeometry
+             * encapsulated in the class. 
+             * @param x - The x coordinate of the ball
+             * @param y - The y coordinate of the ball
+             * @param z - The z coordinate of the ball
+             * @param radius - The radius of the ball
+             */
+            constructor(x, y, z, radius) {
+                this.xVel = 0.004, this.yVel = -0.00, this.zVel = 0.002;
+                this.xAcc = 0, this.yAcc = -0.001, this.zAcc = 0;
+                this.radius = radius;
+                this.angVel = 0;
+                this.lineWidth = 0;
+                let geometry = new THREE.SphereGeometry(
+                    radius,//  radius
+                    10,// widthSegments
+                    10// heightSegments
+                );
+                let material = new THREE.MeshLambertMaterial({ color: 0x1A1AFE, wireframe: true });
+                this.sphere = new THREE.Mesh(geometry, material);
+                this.sphere.position.x = x;
+                this.sphere.position.y = y;
+                this.sphere.position.z = z;
+                this.sphere.castShadow = true;
+            }
+            /**
+             * Sets the x coordinate of the sphere
+             * @param {Number} x - the location along the x-axis
+             */
+            setX(x) {
+                this.sphere.position.x = x;
+            }
+            /**
+             * Sets the x coordinate of the sphere
+             * @param {Number} y - the location along the y-axis
+             */
+            setY(y) {
+                this.sphere.position.y = y;
+            }
+            /**
+             * Sets the x coordinate of the sphere
+             * @param {Number} z - the location along the z-axis
+             */
+            setZ(z) {
+                this.sphere.position.z = z;
+            }
+            /**
+             * @return The x coordinate of the ball
+             */
+            getX() {
+                return this.sphere.position.x;
+            }
+            /**
+             * @return The y coordinate of the ball
+             */
+            getY() {
+                return this.sphere.position.y;
+            }
+            /**
+             * @return The z coordinate of the ball
+             */
+            getZ() {
+                return this.sphere.position.z;
+            }
+
+            /**
+             * Translates the boy by the supplied distances
+             * @param {Number} x - Relative distance along the x - axis
+             * @param {Number} y - Relative distance along the y - axis
+             * @param {Number} z - Relative distance along the z - axis
+             */
+            moveBy(x, y, z) {
+                this.sphere.position.x += x;
+                this.sphere.position.y += y;
+                this.sphere.position.z += z;
+            }
+
+            /**
+             * Rotates the ball relatively to the supplied angle about the x - axis
+             * @param {Number} angle - The angle to rotate the ball through
+             */
+            rotateRX(angle) {
+                this.sphere.rotation.x += angle;
+            }
+            /**
+             * Rotates the ball relatively to the supplied angle about the y - axis
+             * @param {Number} angle - The angle to rotate the ball through
+             */
+            rotateRY(angle) {
+                this.sphere.rotation.y += angle;
+            }
+            /**
+             * Rotates the ball relatively to the supplied angle about the z - axis
+             * @param {Number} angle - The angle to rotate the ball through
+             */
+            rotateRX(angle) {
+                this.sphere.rotation.z += angle;
+            }
+
+            /**
+             * @return A javascript object that contains the x, y, and z 
+             * coordinate of the sphere respectively
+             */
+            getPosition() {
+                return { x: this.getX(), y: this.getY(), z: this.getZ() };
+            }
+
+            /**
+             * @return THREE.Mesh object that makes up the sphere
+             */
+            getSphere() {
+                return this.sphere;
+            }
+
+            /**
+             * This method is called every time the screen is redrawn.
+             * It is assumed that this method is called every second and all calculations are
+             * done with the approximation of td = 1 sec. (td = difference in time between each frame call)
+             * @param {Object} - A dimension object that specifies the size of the scene
+            */
+            move(dimen) {
+                let xU = this.xVel; // Initial velocity along x-axis
+                let yU = this.yVel; // Initial velocity along y-axis
+                let zU = this.zVel; // Initial velocity along z-axis
+                this.xVel = xU + this.xAcc; // Final velocity along x-axis vx = ux + at 
+                this.yVel = yU - Math.abs(this.yAcc); // Final velocity along y-axis vy = uy + g * t
+                this.zVel = zU + this.zAcc; // Final velocity along z-axis zy = uz + g * t
+
+
+
+                this.moveBy(xU + this.xAcc / 2, 0, 0)//this.x += xU + this.xAcc / 2; // Distance travelled per frame s = ux * t + ½a * t²
+                this.moveBy(0, yU + this.yAcc / 2, 0);//this.y += yU + this.yAcc / 2; // Distance travelled per frame s = uy * t + ½g * t²
+                this.moveBy(0, 0, zU + this.zAcc / 2);//this.y += yU + this.yAcc / 2; // Distance travelled per frame s = uy * t + ½g * t²
+
+                this.angle += this.angVel; // Increment angle of rotation per frame by angular acceleration
+
+
+                if ((this.getX() + this.radius) > dimen.x / 2) { // Check if the ball has gone beyound the screen bounds on the right hand side
+                    this.xAcc *= -1; // reverse the sign of the acceleration vector  along x-axis
+                    this.xVel *= -1; // Reverse the sign of the velocity vector along x-axis and apply a damp of 0.9 of the initial velocity
+                    this.setX(dimen.x / 2 - this.radius); // Align the ball to the very end of the screen along the x-axis
+                    this.angVel *= -1; // Reverse the angle of rotation of the ball
+
+                } else if ((this.getX() - this.radius) <= -dimen.x / 2) { // Check if the ball has gone beyond the screen bounds on the left hand side
+                    this.xAcc *= -1; // reverse the sign of the acceleration vector along x-axis
+                    this.xVel *= -1; // Reverse the sig of the velocity vector along x-axis and apply a damp of 0.9 of the initial velocity
+                    this.setX(-dimen.x / 2 + this.radius); // Align the ball to the vey start of the screen along the x-axis
+                    this.angVel *= -1; // Reverse the angle of rotation of the ball
+                }
+                if ((this.getY() + this.radius + this.lineWidth / 2) >= dimen.y) { // Check if the ball has gone beyond the bottom of the screen
+                    console.log("Check it " + this.getY() + " \n" + this.yVel);
+                    this.yAcc *= -1; // Reverse the sign of the acceleration vector (gravity) along y-axis
+                    this.yVel *= -0.98; // Reverse the sign of the velocity vector along the y-axis and dampen by 0.95 of the initial velocity
+                    this.setY(dimen.y - this.radius); // Align the ball at the very bottom of the canvas along the y-axis
+                    this.angVel *= -1; // Reverse the angle of rotation of the ball
+                } else if ((this.getY() - this.radius) < 0) { // Check if the ball has gone above the top of the canvas
+
+                    this.setY(this.radius);
+                    this.yVel *= -0.98; // Reverse the sign of the velocity vector along the y-axis and dampen by 0.95 of the initial velocity
+                    this.yAcc *= -1; // Reverse the sign of the acceleration vector along y-axis
+                    this.angVel *= -1; // Reverse the angle of rotation of the ball
+                } else if ((this.getZ() + this.radius) >= dimen.z / 2) { // Check if the ball has gone beyond the bottom of the screen
+                    this.zAcc *= -1; // Reverse the sign of the acceleration vector (gravity) along y-axis
+                    this.zVel *= -1; // Reverse the sign of the velocity vector along the y-axis and dampen by 0.95 of the initial velocity
+                    this.setZ(dimen.z / 2 - this.radius); // Align the ball at the very bottom of the canvas along the y-axis
+                    this.angVel *= -1; // Reverse the angle of rotation of the ball
+                } else if ((this.getZ() - this.radius) < -dimen.z / 2) { // Check if the ball has gone above the top of the canvas
+
+                    this.setZ(-dimen.z / 2 + this.radius);
+                    this.zVel *= -1; // Reverse the sign of the velocity vector along the y-axis and dampen by 0.95 of the initial velocity
+                    this.zAcc *= -1; // Reverse the sign of the acceleration vector along y-axis
+                    this.angVel *= -1; // Reverse the angle of rotation of the ball
+                }
+
+                //		this.draw(ctx);
+            }
+        }
+
+        function initTHREEJS() {
+            let scene = new THREE.Scene();
+
+            let camera = new THREE.PerspectiveCamera(
+                75, // field of view
+                window.innerWidth / window.innerHeight, // aspect ratio
+                0.1, // inner view
+                1000 // outer view
+            );
+            camera.position.z = 1.0;
+            camera.position.y = 1;
+            camera.position.x = -0.5;
+
+            let light = new THREE.SpotLight(
+                0xFFFFFF// color
+                , 1 // intensity
+                , 500 // position
+            );
+            const light1 = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
+            light.castShadow = true;
+            light.position.set(0, 1, 0);
+
+            let renderer = new THREE.WebGLRenderer(
+                { antialias: true }
+            );
+            renderer.setClearColor('#E5E5E5');
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            //       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+            document.body.appendChild(renderer.domElement);
+            window.addEventListener('resize', () => {
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+            });
+            let mouse = new THREE.Vector2();
+            return {
+                scene: scene,
+                camera: camera,
+                renderer: renderer,
+                light: light,
+            };
+        }
+
+        const { scene, camera, renderer, light } = initTHREEJS();
+        var mouse = new THREE.Vector2();
+        function onMouseClick(event) {
+            event.preventDefault();
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+
+            var intersects = raycaster.intersectObjects(scene.children, true);
+            //      console.log(intersects);
+            for (let i = 0; i < intersects.length; i++) {
+                intersects[i].object.material.color.set(0xFF0000);
+                this.t1 = new TimelineMax(.3);
+
+                this.t1.to(this.mesh.position, 0.5, { x: 0.5, ease: Expo.easeOut });
+                this.t1.to(this.mesh.rotation, 0.5, { z: Math.PI * 0.5, ease: Expo.easeOut });
+            }
+        }
+
+        const PLAIN_DIMEN = {
+            x: 1,
+            y: 1,
+            z: 1,
+        };
+
+        const plane = new THREE.Mesh(
+            new THREE.PlaneGeometry(PLAIN_DIMEN.x, PLAIN_DIMEN.z),
+            new THREE.MeshLambertMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide })
+        );
+        plane.castShadow = true;
+        plane.receiveShadow = true;
+        plane.rotation.x = Math.PI / 2;
+
+        const plane1 = new THREE.Mesh(
+            new THREE.PlaneGeometry(PLAIN_DIMEN.x, PLAIN_DIMEN.z),
+            new THREE.MeshLambertMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide })
+        );
+
+        plane1.position.y = PLAIN_DIMEN.y / 2;
+        plane1.position.x = -PLAIN_DIMEN.x / 2;
+        plane1.rotation.y = Math.PI / 2;
+
+        const plane2 = new THREE.Mesh(
+            new THREE.PlaneGeometry(PLAIN_DIMEN.x, PLAIN_DIMEN.z),
+            new THREE.MeshLambertMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide })
+        );
+
+        plane2.position.y = PLAIN_DIMEN.y / 2;
+        plane2.position.x = PLAIN_DIMEN.x / 2;
+        plane2.rotation.y = Math.PI / 2;
+
+        const plane3 = new THREE.Mesh(
+            new THREE.PlaneGeometry(PLAIN_DIMEN.x, PLAIN_DIMEN.z),
+            new THREE.MeshLambertMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide })
+        );
+        //      plane3.rotation.x = Math.PI / 2;
+        plane3.position.z = -PLAIN_DIMEN.z / 2;
+        plane3.position.y = PLAIN_DIMEN.y / 2;
+
+        const box = new THREE.Mesh(
+            new THREE.BoxGeometry(PLAIN_DIMEN.x, PLAIN_DIMEN.y, PLAIN_DIMEN.z),
+            new THREE.MeshPhongMaterial({color: 0x00FF00, transparent: true, opacity: 0.25})
+        );
+        box.position.y = PLAIN_DIMEN.y / 2;
+
+
+
+
+
+
+        var ball = new Ball(0, 0.5, 0, 0.02);
+                const helper = new THREE.CameraHelper(light.shadow.camera);
+
+        scene.add(camera);
+        scene.add(ball.getSphere());
+        scene.add(plane);
+  //      scene.add(plane1);
+  //      scene.add(plane2);
+  //      scene.add(plane3);
+        scene.add(box);
+        scene.add(light);
+               scene.add(helper);
+               const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+        var repeatMe = function () {
+            requestAnimationFrame(repeatMe);
+            //      0.25 - 3 - 12
+            //      camera.position.set(0, 3, 0);
+            //     camera.rotation.y += 0.01;
+            //     camera.position.set(0.25, 3, 12);
+            ball.move(PLAIN_DIMEN);
+            ball.rotateRY(0.01);
+            //       ball.moveBy(0, 0.1, 0);
+                 controls.update();
+            if (ball.getY() >= 50) {
+
+            }
+
+
+            renderer.render(scene, camera);
+
+        }
+        repeatMe();
+
+    </script>
+</body>
+
+</html>
