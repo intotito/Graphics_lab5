@@ -12,7 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/102/three.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.5/dat.gui.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/2.1.2/TweenMax.min.js"></script>
-        <script src="OrbitControls.js"></script>
+    <script src="OrbitControls.js"></script>
 
     <script type="text/javascript">
         /**
@@ -199,6 +199,12 @@
             }
         }
 
+        /**
+         * This funtion initializes the THREE.js environment for rendering the user view
+         * @return {Object} - A javascript object that contains
+         * Scene, Camera, Renderer and Light
+         */
+
         function initTHREEJS() {
             let scene = new THREE.Scene();
 
@@ -306,30 +312,34 @@
 
         const box = new THREE.Mesh(
             new THREE.BoxGeometry(PLAIN_DIMEN.x, PLAIN_DIMEN.y, PLAIN_DIMEN.z),
-            new THREE.MeshPhongMaterial({color: 0x00FF00, transparent: true, opacity: 0.25})
+            new THREE.MeshPhongMaterial({ color: 0x00FF00, transparent: true, opacity: 0.25 })
         );
         box.position.y = PLAIN_DIMEN.y / 2;
 
 
-
+var toRad = (angle) => {
+    return (angle % 360) * Math.PI / 180;
+}
 
 
 
         var ball = new Ball(0, 0.5, 0, 0.02);
-                const helper = new THREE.CameraHelper(light.shadow.camera);
+        const helper = new THREE.CameraHelper(light.shadow.camera);
 
         scene.add(camera);
         scene.add(ball.getSphere());
         scene.add(plane);
-  //      scene.add(plane1);
-  //      scene.add(plane2);
-  //      scene.add(plane3);
+        //      scene.add(plane1);
+        //      scene.add(plane2);
+        //      scene.add(plane3);
         scene.add(box);
         scene.add(light);
-               scene.add(helper);
-               const controls = new THREE.OrbitControls(camera, renderer.domElement);
-
+        scene.add(helper);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+var number = 0;
         var repeatMe = function () {
+            number++;
+            
             requestAnimationFrame(repeatMe);
             //      0.25 - 3 - 12
             //      camera.position.set(0, 3, 0);
@@ -337,8 +347,14 @@
             //     camera.position.set(0.25, 3, 12);
             ball.move(PLAIN_DIMEN);
             ball.rotateRY(0.01);
+            let color =  new THREE.Color(
+                Math.sin(toRad(number % 180)), 0,  1 - Math.sin(toRad(number % 180))
+     //           (number % 255) / 255, 0, 1 - (number % 255) / 255
+            );
+            console.log(color);
+            ball.getSphere().material.color = color;
             //       ball.moveBy(0, 0.1, 0);
-                 controls.update();
+            controls.update();
             if (ball.getY() >= 50) {
 
             }
