@@ -12,7 +12,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/102/three.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.5/dat.gui.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/2.1.2/TweenMax.min.js"></script>
-    <script src="OrbitControls.js"></script>
+    <script src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
+    <!-- <script src="OrbitControls.js"></script> -->
 
     <script type="text/javascript">
         /**
@@ -23,28 +24,40 @@
             /**
              * The constructor accepts four arguments for constructing a THREE.SphereGeometry
              * encapsulated in the class. 
-             * @param x - The x coordinate of the ball
-             * @param y - The y coordinate of the ball
-             * @param z - The z coordinate of the ball
-             * @param radius - The radius of the ball
+             * @param {Number} x - The x coordinate of the ball
+             * @param {Number} y - The y coordinate of the ball
+             * @param {Number} z - The z coordinate of the ball
+             * @param {Number} radius - The radius of the ball
              */
             constructor(x, y, z, radius) {
-                this.xVel = 0.004, this.yVel = -0.00, this.zVel = 0.002;
-                this.xAcc = 0, this.yAcc = -0.001, this.zAcc = 0;
+                this.xVel = 0.009, this.yVel = -0.00, this.zVel = 0.004;
+                this.xAcc = 0, this.yAcc = -0.004, this.zAcc = 0;
                 this.radius = radius;
-                this.angVel = 0;
+                this.angVel = toRad(3);
                 this.lineWidth = 0;
                 let geometry = new THREE.SphereGeometry(
                     radius,//  radius
                     10,// widthSegments
                     10// heightSegments
                 );
-                let material = new THREE.MeshLambertMaterial({ color: 0x1A1AFE, wireframe: true });
+                let material = new THREE.MeshLambertMaterial({
+                    color: 0x1A1AFE,
+                    wireframe: false,
+                    polygonOffset: true,
+                    polygonOffsetFactor: 1,
+                    polygonOffsetUnits: 1
+                });
                 this.sphere = new THREE.Mesh(geometry, material);
                 this.sphere.position.x = x;
                 this.sphere.position.y = y;
                 this.sphere.position.z = z;
                 this.sphere.castShadow = true;
+
+                let geo = new THREE.EdgesGeometry(this.sphere.geometry);
+                let mat = new THREE.LineBasicMaterial({ color: 0xFFFF });
+                this.wireframe = new THREE.LineSegments(geo, mat);
+                this.sphere.add(this.wireframe);
+
             }
             /**
              * Sets the x coordinate of the sphere
@@ -157,29 +170,52 @@
 
                 this.angle += this.angVel; // Increment angle of rotation per frame by angular acceleration
 
+                this.sphere.rotation.y += this.angVel;
+                this.sphere.rotation.x += this.angVel;
+                //      this.rotateRY(-this.angVel);
 
                 if ((this.getX() + this.radius) > dimen.x / 2) { // Check if the ball has gone beyound the screen bounds on the right hand side
                     this.xAcc *= -1; // reverse the sign of the acceleration vector  along x-axis
                     this.xVel *= -1; // Reverse the sign of the velocity vector along x-axis and apply a damp of 0.9 of the initial velocity
                     this.setX(dimen.x / 2 - this.radius); // Align the ball to the very end of the screen along the x-axis
                     this.angVel *= -1; // Reverse the angle of rotation of the ball
+                    markedTime.x = time;
+                    target.ball.x = this.getX();
+                    target.ball.y = this.getY();
+                    target.ball.z = this.getZ();
+                    target.velocity.x = this.xVel;
+                    target.velocity.y = this.yVel;
+                    target.velocity.z = this.zVel;
+                    target.source.x = camera.position.x;
+                    target.source.z = camera.position.z;
+                    target.source.y = camera.position.y;
 
                 } else if ((this.getX() - this.radius) <= -dimen.x / 2) { // Check if the ball has gone beyond the screen bounds on the left hand side
                     this.xAcc *= -1; // reverse the sign of the acceleration vector along x-axis
                     this.xVel *= -1; // Reverse the sig of the velocity vector along x-axis and apply a damp of 0.9 of the initial velocity
                     this.setX(-dimen.x / 2 + this.radius); // Align the ball to the vey start of the screen along the x-axis
                     this.angVel *= -1; // Reverse the angle of rotation of the ball
+                    markedTime.x = time;
+                    target.ball.x = this.getX();
+                    target.ball.y = this.getY();
+                    target.ball.z = this.getZ();
+                    target.velocity.x = this.xVel;
+                    target.velocity.y = this.yVel;
+                    target.velocity.z = this.zVel;
+                    target.source.x = camera.position.x;
+                    target.source.z = camera.position.z;
+                    target.source.y = camera.position.y;
                 }
                 if ((this.getY() + this.radius + this.lineWidth / 2) >= dimen.y) { // Check if the ball has gone beyond the bottom of the screen
                     console.log("Check it " + this.getY() + " \n" + this.yVel);
                     this.yAcc *= -1; // Reverse the sign of the acceleration vector (gravity) along y-axis
-                    this.yVel *= -0.98; // Reverse the sign of the velocity vector along the y-axis and dampen by 0.95 of the initial velocity
+                    this.yVel *= -0.93; // Reverse the sign of the velocity vector along the y-axis and dampen by 0.95 of the initial velocity
                     this.setY(dimen.y - this.radius); // Align the ball at the very bottom of the canvas along the y-axis
                     this.angVel *= -1; // Reverse the angle of rotation of the ball
                 } else if ((this.getY() - this.radius) < 0) { // Check if the ball has gone above the top of the canvas
 
                     this.setY(this.radius);
-                    this.yVel *= -0.98; // Reverse the sign of the velocity vector along the y-axis and dampen by 0.95 of the initial velocity
+                    this.yVel *= -0.93; // Reverse the sign of the velocity vector along the y-axis and dampen by 0.95 of the initial velocity
                     this.yAcc *= -1; // Reverse the sign of the acceleration vector along y-axis
                     this.angVel *= -1; // Reverse the angle of rotation of the ball
                 } else if ((this.getZ() + this.radius) >= dimen.z / 2) { // Check if the ball has gone beyond the bottom of the screen
@@ -225,7 +261,7 @@
             );
             const light1 = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
             light.castShadow = true;
-            light.position.set(0, 1, 0);
+            light.position.set(0, 2, 0);
 
             let renderer = new THREE.WebGLRenderer(
                 { antialias: true }
@@ -270,46 +306,21 @@
             }
         }
 
+        // Represents the size of the plane
         const PLAIN_DIMEN = {
-            x: 1,
-            y: 1,
-            z: 1,
+            x: 2,
+            y: 2,
+            z: 2,
         };
 
+
         const plane = new THREE.Mesh(
-            new THREE.PlaneGeometry(PLAIN_DIMEN.x, PLAIN_DIMEN.z),
-            new THREE.MeshLambertMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide })
+            new THREE.BoxGeometry(PLAIN_DIMEN.x, 0.01, PLAIN_DIMEN.z),
+            new THREE.MeshPhongMaterial({ color: 0xFF0000, shininess: 150, specular: 0x111111 })
         );
         plane.castShadow = true;
         plane.receiveShadow = true;
-        plane.rotation.x = Math.PI / 2;
-
-        const plane1 = new THREE.Mesh(
-            new THREE.PlaneGeometry(PLAIN_DIMEN.x, PLAIN_DIMEN.z),
-            new THREE.MeshLambertMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide })
-        );
-
-        plane1.position.y = PLAIN_DIMEN.y / 2;
-        plane1.position.x = -PLAIN_DIMEN.x / 2;
-        plane1.rotation.y = Math.PI / 2;
-
-        const plane2 = new THREE.Mesh(
-            new THREE.PlaneGeometry(PLAIN_DIMEN.x, PLAIN_DIMEN.z),
-            new THREE.MeshLambertMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide })
-        );
-
-        plane2.position.y = PLAIN_DIMEN.y / 2;
-        plane2.position.x = PLAIN_DIMEN.x / 2;
-        plane2.rotation.y = Math.PI / 2;
-
-        const plane3 = new THREE.Mesh(
-            new THREE.PlaneGeometry(PLAIN_DIMEN.x, PLAIN_DIMEN.z),
-            new THREE.MeshLambertMaterial({ color: 0xFFFFFF, side: THREE.DoubleSide })
-        );
-        //      plane3.rotation.x = Math.PI / 2;
-        plane3.position.z = -PLAIN_DIMEN.z / 2;
-        plane3.position.y = PLAIN_DIMEN.y / 2;
-
+        plane.position.y = -0.01 / 2;
         const box = new THREE.Mesh(
             new THREE.BoxGeometry(PLAIN_DIMEN.x, PLAIN_DIMEN.y, PLAIN_DIMEN.z),
             new THREE.MeshPhongMaterial({ color: 0x00FF00, transparent: true, opacity: 0.25 })
@@ -317,54 +328,112 @@
         box.position.y = PLAIN_DIMEN.y / 2;
 
 
-var toRad = (angle) => {
-    return (angle % 360) * Math.PI / 180;
-}
+        var toRad = (angle) => {
+            return angle * Math.PI / 180;
+        }
+
+        var toDeg = (angle) => {
+            return angle * 180 / Math.PI;
+        }
 
 
 
-        var ball = new Ball(0, 0.5, 0, 0.02);
+        var ball = new Ball(0.2, 1, 0.8, 0.04);
         const helper = new THREE.CameraHelper(light.shadow.camera);
 
         scene.add(camera);
         scene.add(ball.getSphere());
         scene.add(plane);
-        //      scene.add(plane1);
-        //      scene.add(plane2);
-        //      scene.add(plane3);
         scene.add(box);
         scene.add(light);
         scene.add(helper);
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-var number = 0;
+        // const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        var number = 45;
+        // Clock for time keeping
+        const clock = new THREE.Clock();
+        var target = {
+            ball: { x: 0, y: 0, z: 0 },
+            dest: { x: 0, y: 0, z: 0 },
+            source: { x: 0, y: 0, z: 0 },
+            velocity: { x: 0, y: 0, z: 0 }
+        };
+        // Camera offset away from the ball
+        var cameraOffset = {
+            x: 1.7,
+            y: 0.7,
+            z: 1.7
+        }
+        var time = 0;
+        const duration =  0.5; // duration of camera adjustement maneurver
+        // Time to start maneurver
+        var markedTime = {
+            x: 0 - duration,
+            z: 0 - duration
+        };
+        var count = 0;
+        var delta = 0;
+
+        /**
+         * This method performs the camera adjustment maneuver by rotating and going behind the ball
+         */
+        function positionCamera() {
+            let phi = Math.atan2(target.velocity.z, target.velocity.x);
+            let tetha = Math.atan2(target.source.z - target.ball.z, target.source.x - target.ball.x);
+            let ang1 = -theta - Math.PI - phi;
+            let ang2 = 2 * Math.PI - Math.abs(ang1);
+            let ang = Math.abs(ang1) < Math.abs(ang2) ? ang1 : ang2;
+            let x = target.source.x;
+            let z = target.source.z;
+            let progress = (time - markedTime.x) / duration;
+            let angle = progress * ang;
+            let cosB = Math.cos(angle);
+            let sinB = Math.sin(angle);
+            camera.position.x = x * cosB - z * sinB + target.ball.x * (1 - cosB) + target.ball.z * sinB;
+            camera.position.z = x * sinB + z * cosB + target.ball.z * (1 - cosB) - target.ball.x * sinB;
+            
+        }
+
+        /**
+         * The repeatme function that is called for every frames
+         */
         var repeatMe = function () {
             number++;
-            
+            delta = clock.getDelta();
+            time = clock.elapsedTime;
             requestAnimationFrame(repeatMe);
-            //      0.25 - 3 - 12
-            //      camera.position.set(0, 3, 0);
-            //     camera.rotation.y += 0.01;
-            //     camera.position.set(0.25, 3, 12);
-            ball.move(PLAIN_DIMEN);
-            ball.rotateRY(0.01);
-            let color =  new THREE.Color(
-                Math.sin(toRad(number % 180)), 0,  1 - Math.sin(toRad(number % 180))
-     //           (number % 255) / 255, 0, 1 - (number % 255) / 255
-            );
-            console.log(color);
-            ball.getSphere().material.color = color;
-            //       ball.moveBy(0, 0.1, 0);
-            controls.update();
-            if (ball.getY() >= 50) {
+            let sum = (Number(markedTime.x) + Number(duration));
+            if (time < sum) { // Check if animation is still ongoing within the stipulated time
+                positionCamera();
+               
+            } else { // Gracefully adjust camera with specified offset
+                let targetx = ball.getX() - (ball.xVel / Math.abs(ball.xVel)) * cameraOffset.x;
+                let targetz = ball.getZ() - (ball.zVel / Math.abs(ball.zVel)) * cameraOffset.z;
+                let dx = targetx - camera.position.x;
+                let dz = targetz - camera.position.z;
+                camera.position.x += dx * delta / 2;
+                camera.position.z += dz * delta / 2;
 
             }
+
+            // Force the camera's viewe orientation towards the ball
+            camera.lookAt(ball.getX(), PLAIN_DIMEN.y / 2, ball.getZ());
+
+            ball.move(PLAIN_DIMEN);
+            // Generate a color from between blue and red
+            let color = new THREE.Color(
+                Math.sin(toRad(number % 180)), 0, 1 - Math.sin(toRad(number % 180))
+            );
+            ball.getSphere().material.color = color;
+
+            // controls.update();
 
 
             renderer.render(scene, camera);
 
         }
         repeatMe();
-
+        var count = 0;
+        var increasing = true;
     </script>
 </body>
 
